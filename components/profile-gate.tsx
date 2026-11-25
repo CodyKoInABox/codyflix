@@ -188,9 +188,11 @@ export function ProfileGate() {
                 </>
               ) : (
                 <>
-                  <button type="button" className="btn btn-danger" onClick={() => setConfirmDelete(true)}>
-                    Delete
-                  </button>
+                  {store.profiles.length > 1 ? (
+                    <button type="button" className="btn btn-danger" onClick={() => setConfirmDelete(true)}>
+                      Delete
+                    </button>
+                  ) : null}
                   <button type="submit" className="btn">
                     Save
                   </button>

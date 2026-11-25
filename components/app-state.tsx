@@ -184,11 +184,13 @@ export function Providers({ catalog, children }: { catalog: Catalog; children: R
       },
       deleteProfile: (id: string) => {
         updateLiveStore((current) => {
+          const profiles = removeProfile(current.profiles, id);
+          if (profiles === current.profiles) return current;
           const libraries = { ...current.libraries };
           delete libraries[id];
           return {
             ...current,
-            profiles: removeProfile(current.profiles, id),
+            profiles,
             libraries,
             activeProfileId: current.activeProfileId === id ? null : current.activeProfileId,
           };

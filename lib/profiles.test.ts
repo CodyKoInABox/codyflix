@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { addProfile, deleteProfile, MAX_PROFILES, renameProfile, sanitizeName } from "@/lib/profiles";
+import { addProfile, DEFAULT_PROFILE, deleteProfile, MAX_PROFILES, renameProfile, sanitizeName } from "@/lib/profiles";
 import type { Profile } from "@/lib/types";
 
 function profile(id: string, name = `Person ${id}`): Profile {
@@ -24,9 +24,19 @@ describe("profiles", () => {
   });
 
   it("renames and deletes", () => {
-    const profiles = [profile("a", "Cody")];
-    expect(renameProfile(profiles, "a", "Kelsey")[0]?.name).toBe("Kelsey");
+    const profiles = [profile("a", "Cody"), profile("b", "Kelsey")];
+    expect(renameProfile(profiles, "a", "Noel")[0]?.name).toBe("Noel");
     expect(renameProfile(profiles, "a", " ")).toEqual(profiles);
-    expect(deleteProfile(profiles, "a")).toEqual([]);
+    expect(deleteProfile(profiles, "a")).toEqual([profile("b", "Kelsey")]);
+    expect(deleteProfile(profiles, "missing")).toBe(profiles);
+  });
+
+  it("never deletes the last profile", () => {
+    const only = [{ ...DEFAULT_PROFILE }];
+    expect(deleteProfile(only, DEFAULT_PROFILE.id)).toBe(only);
+  });
+
+  it("defines Default as the entry profile", () => {
+    expect(DEFAULT_PROFILE).toEqual({ id: "default", name: "Default", avatar: "ember" });
   });
 });
