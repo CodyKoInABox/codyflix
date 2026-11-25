@@ -7,25 +7,34 @@ import { useApp } from "@/components/app-state";
 import { Avatar } from "@/components/avatar";
 import { SearchIcon } from "@/components/icons";
 import { useHydrated } from "@/components/use-media";
+import { searchHref } from "@/lib/search";
 
 export function Header() {
   const pathname = usePathname();
   const params = useSearchParams();
   const router = useRouter();
   const hydrated = useHydrated();
-  const { catalog, store, profile, signOut, requestManage } = useApp();
+  const { catalog, store, profile, signOut, requestManage, selectProfile } = useApp();
   const home = pathname === "/";
-  const urlQuery = hydrated && pathname.startsWith("/search") ? (params.get("q") ?? "") : "";
+  const onSearch = pathname.startsWith("/search");
+  const urlQuery = hydrated && onSearch ? (params.get("q") ?? "") : "";
   const [seenQuery, setSeenQuery] = useState(urlQuery);
   const [value, setValue] = useState(urlQuery);
   const [searchOpen, setSearchOpen] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
   const [focused, setFocused] = useState(false);
   const timer = useRef(0);
+  const latestValue = useRef(value);
+  const enteringSearch = useRef(false);
+  const pendingProfile = useRef<string | null>(null);
+  const otherProfiles = store.hydrated ? store.profiles.filter((item) => item.id !== profile?.id) : [];
 
   if (urlQuery !== seenQuery) {
     setSeenQuery(urlQuery);
-    if (!focused) setValue(urlQuery);
+    if (!focused) {
+      setValue(urlQuery);
+      setSearchOpen(Boolean(urlQuery));
+    }
   }
 
   useEffect(() => {
@@ -38,11 +47,56 @@ export function Header() {
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
 
+  useEffect(() => {
+    const id = pendingProfile.current;
+    if (!id || pathname !== "/") return;
+    pendingProfile.current = null;
+    selectProfile(id);
+  }, [pathname, selectProfile]);
+
+  // Same rule as the gate: a watch page must be gone before another profile becomes active.
+  function switchProfile(id: string) {
+    if (pathname === "/") {
+      selectProfile(id);
+      return;
+    }
+    pendingProfile.current = id;
+    router.push("/");
+  }
+
+  useEffect(() => {
+    if (!onSearch || !enteringSearch.current) return;
+    enteringSearch.current = false;
+    const href = searchHref(latestValue.current);
+    if (`${window.location.pathname}${window.location.search}` !== href) router.replace(href, { scroll: false });
+  }, [onSearch, router]);
+
+  // A replace issued while the push into /search/ is still pending would overwrite
+  // the page search was opened from, so typing waits for that route to commit.
   function commit(next: string) {
-    const trimmed = next.trim();
-    const href = trimmed ? `/search/?q=${encodeURIComponent(trimmed)}` : "/search/";
+    const href = searchHref(next);
     const current = `${window.location.pathname}${window.location.search}`;
-    if (current !== href) router.replace(href, { scroll: false });
+    if (window.location.pathname.startsWith("/search")) {
+      if (current !== href) router.replace(href, { scroll: false });
+      return;
+    }
+    if (!next.trim() || enteringSearch.current) return;
+    enteringSearch.current = true;
+    router.push(href, { scroll: false });
+  }
+
+  function updateSearch(next: string) {
+    latestValue.current = next;
+    setValue(next);
+    window.clearTimeout(timer.current);
+    timer.current = window.setTimeout(() => commit(next), 160);
+  }
+
+  function collapseSearch() {
+    window.clearTimeout(timer.current);
+    latestValue.current = "";
+    setSearchOpen(false);
+    setValue("");
   }
 
   return (
@@ -111,20 +165,14 @@ export function Header() {
                 }}
                 onBlur={() => {
                   setFocused(false);
+                  if (!value.trim()) collapseSearch();
                 }}
                 onChange={(event) => {
-                  const next = event.target.value;
                   setSearchOpen(true);
-                  setValue(next);
-                  window.clearTimeout(timer.current);
-                  timer.current = window.setTimeout(() => commit(next), 160);
+                  updateSearch(event.target.value);
                 }}
                 onKeyDown={(event) => {
-                  if (event.key === "Escape") {
-                    setSearchOpen(false);
-                    setValue("");
-                    if (pathname.startsWith("/search")) router.push("/");
-                  }
+                  if (event.key === "Escape") collapseSearch();
                 }}
               />
               <button
@@ -145,20 +193,31 @@ export function Header() {
           <PopMenu
             id="profile-menu"
             label={
-              store.hydrated && profile ? (
-                <Avatar name={profile.name} avatar={profile.avatar} />
-              ) : (
-                <span className="avatar avatar-skeleton" />
-              )
+              <>
+                {store.hydrated && profile ? (
+                  <Avatar name={profile.name} avatar={profile.avatar} />
+                ) : (
+                  <span className="avatar avatar-skeleton" />
+                )}
+                <span className="profile-caret" aria-hidden="true" />
+                <span className="visually-hidden">{profile ? `Profile menu, ${profile.name}` : "Profile menu"}</span>
+              </>
             }
             className="profile-trigger"
           >
             <p className="menu-label">{profile?.name ?? "Profile"}</p>
-            <button type="button" onClick={signOut}>
-              Switch profile
-            </button>
+            {otherProfiles.map((item) => (
+              <button key={item.id} type="button" className="menu-profile" onClick={() => switchProfile(item.id)}>
+                <Avatar name={item.name} avatar={item.avatar} className="avatar-sm" />
+                <span>{item.name}</span>
+              </button>
+            ))}
             <button type="button" onClick={requestManage}>
               Manage profiles
+            </button>
+            <hr className="menu-divider" />
+            <button type="button" onClick={signOut}>
+              Switch profile
             </button>
           </PopMenu>
         </div>

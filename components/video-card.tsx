@@ -10,6 +10,12 @@ import { progressRatio } from "@/lib/progress";
 import { yearOf } from "@/lib/text";
 import type { Video } from "@/lib/types";
 
+const HOVER_DELAY_MS = 450;
+const HOVER_SCALE = 1.5;
+const HOVER_BODY_ESTIMATE = 210;
+
+export const hoverOrigin: { current: HTMLElement | null } = { current: null };
+
 export function VideoCard({
   video,
   hoverCards = true,
@@ -37,13 +43,17 @@ export function VideoCard({
         const target = event.currentTarget;
         window.clearTimeout(timer.current);
         timer.current = window.setTimeout(() => {
-          const rect = target.getBoundingClientRect();
-          const width = Math.round(Math.max(rect.width * 1.48, 280));
-          const estimated = width * (9 / 16) + 150;
+          const rect = (target.querySelector(".title-card-thumb") ?? target).getBoundingClientRect();
+          const width = Math.round(Math.max(rect.width * HOVER_SCALE, 300));
+          const mediaHeight = width * (9 / 16);
           const left = Math.max(12, Math.min(rect.left + rect.width / 2 - width / 2, window.innerWidth - width - 12));
-          const top = Math.max(76, Math.min(rect.top - 12, window.innerHeight - estimated - 12));
+          const top = Math.max(
+            76,
+            Math.min(rect.top + rect.height / 2 - mediaHeight / 2, window.innerHeight - mediaHeight - HOVER_BODY_ESTIMATE - 12),
+          );
+          hoverOrigin.current = target;
           setHover({ videoId: video.id, top, left, width });
-        }, 680);
+        }, HOVER_DELAY_MS);
       }}
       onMouseLeave={() => {
         window.clearTimeout(timer.current);

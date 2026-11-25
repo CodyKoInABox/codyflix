@@ -64,10 +64,9 @@ const videos = [
 const empty: ProfileLibrary = { list: [], likes: {}, progress: {} };
 
 describe("buildHomeRows", () => {
-  it("builds latest, top 10, channel, and grouped rows without personal rows", () => {
-    const rows = buildHomeRows(channels, videos, empty);
+  it("builds top 10, latest, channel, and grouped rows without personal rows", () => {
+    const rows = buildHomeRows(channels, [...videos, video("second00002", "second", "2026-10-01T00:00:00.000Z")], empty);
     expect(rows.map((row) => row.id)).toEqual([
-      "latest",
       "top10",
       "channel-cody-ko",
       "channel-cody-and-ko",
@@ -75,7 +74,15 @@ describe("buildHomeRows", () => {
       "channel-chill",
       "podcasts-collabs",
     ]);
-    expect(rows.find((row) => row.id === "top10")?.videos.map((video) => video.id)[0]).toBe("second00001");
+    expect(rows.find((row) => row.id === "top10")?.videos.map((video) => video.id)).toEqual([
+      "second00001",
+      "tmg00000001",
+      "pod00000001",
+      "main0000001",
+      "second00002",
+      "tmg00000002",
+      "main0000002",
+    ]);
     expect(rows.find((row) => row.id === "top10")?.note).toMatch(/publish date/i);
     expect(rows.find((row) => row.id === "podcasts-collabs")?.videos.map((video) => video.id)).toEqual([
       "tmg00000001",
@@ -106,6 +113,21 @@ describe("buildHomeRows", () => {
     const because = rows.find((row) => row.id === "because");
     expect(because?.title).toBe("Because you watched TMG Studios");
     expect(because?.videos.map((video) => video.id)).toEqual(["tmg00000002"]);
+  });
+
+  it("keeps the latest row free of top 10 titles", () => {
+    const many = Array.from({ length: 14 }, (_, index) =>
+      video(`extra${String(index).padStart(6, "0")}`, "second", new Date(Date.UTC(2026, 10, 20 - index)).toISOString()),
+    );
+    const rows = buildHomeRows(channels, [...videos, ...many], empty);
+    const topVideos = rows.find((row) => row.id === "top10")?.videos ?? [];
+    const top = topVideos.map((item) => item.id);
+    const latest = rows.find((row) => row.id === "latest")?.videos.map((item) => item.id) ?? [];
+    expect(top).toHaveLength(10);
+    expect(new Set(topVideos.map((item) => item.channelId)).size).toBe(4);
+    expect(latest.length).toBeGreaterThan(0);
+    expect(latest.filter((id) => top.includes(id))).toEqual([]);
+    expect(rows.findIndex((row) => row.id === "top10")).toBeLessThan(rows.findIndex((row) => row.id === "latest"));
   });
 
   it("features the newest main-channel video even when another channel is newer", () => {
