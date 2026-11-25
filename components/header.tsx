@@ -7,6 +7,7 @@ import { useApp } from "@/components/app-state";
 import { Avatar } from "@/components/avatar";
 import { SearchIcon } from "@/components/icons";
 import { useHydrated } from "@/components/use-media";
+import { searchHref } from "@/lib/search";
 
 export function Header() {
   const pathname = usePathname();
@@ -23,7 +24,8 @@ export function Header() {
   const inputRef = useRef<HTMLInputElement>(null);
   const [focused, setFocused] = useState(false);
   const timer = useRef(0);
-  const returnTo = useRef("/");
+  const latestValue = useRef(value);
+  const enteringSearch = useRef(false);
   const pendingProfile = useRef<string | null>(null);
   const otherProfiles = store.hydrated ? store.profiles.filter((item) => item.id !== profile?.id) : [];
 
@@ -62,20 +64,37 @@ export function Header() {
     router.push("/");
   }
 
+  useEffect(() => {
+    if (!onSearch || !enteringSearch.current) return;
+    enteringSearch.current = false;
+    const href = searchHref(latestValue.current);
+    if (`${window.location.pathname}${window.location.search}` !== href) router.replace(href, { scroll: false });
+  }, [onSearch, router]);
+
+  // A replace issued while the push into /search/ is still pending would overwrite
+  // the page search was opened from, so typing waits for that route to commit.
   function commit(next: string) {
-    const trimmed = next.trim();
+    const href = searchHref(next);
     const current = `${window.location.pathname}${window.location.search}`;
-    if (!trimmed) {
-      if (onSearch) router.replace(returnTo.current, { scroll: false });
+    if (window.location.pathname.startsWith("/search")) {
+      if (current !== href) router.replace(href, { scroll: false });
       return;
     }
-    if (!onSearch) returnTo.current = current;
-    const href = `/search/?q=${encodeURIComponent(trimmed)}`;
-    if (current !== href) router.replace(href, { scroll: false });
+    if (!next.trim() || enteringSearch.current) return;
+    enteringSearch.current = true;
+    router.push(href, { scroll: false });
+  }
+
+  function updateSearch(next: string) {
+    latestValue.current = next;
+    setValue(next);
+    window.clearTimeout(timer.current);
+    timer.current = window.setTimeout(() => commit(next), 160);
   }
 
   function collapseSearch() {
     window.clearTimeout(timer.current);
+    latestValue.current = "";
     setSearchOpen(false);
     setValue("");
   }
@@ -149,17 +168,11 @@ export function Header() {
                   if (!value.trim()) collapseSearch();
                 }}
                 onChange={(event) => {
-                  const next = event.target.value;
                   setSearchOpen(true);
-                  setValue(next);
-                  window.clearTimeout(timer.current);
-                  timer.current = window.setTimeout(() => commit(next), 160);
+                  updateSearch(event.target.value);
                 }}
                 onKeyDown={(event) => {
-                  if (event.key === "Escape") {
-                    collapseSearch();
-                    if (onSearch) router.push(returnTo.current);
-                  }
+                  if (event.key === "Escape") collapseSearch();
                 }}
               />
               <button
