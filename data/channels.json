@@ -1,0 +1,65 @@
+[
+  {
+    "id": "UCfp86n--4JvqKbunwSI2lYQ",
+    "slug": "cody-ko",
+    "name": "Cody Ko",
+    "role": "main",
+    "handle": "@codyko",
+    "url": "https://www.youtube.com/channel/UCfp86n--4JvqKbunwSI2lYQ",
+    "blurb": "Cody Ko’s main channel. Commentary, sketches, and the uploads that are published under his name."
+  },
+  {
+    "id": "UCy06jHRS_82N2i5v1YL7glQ",
+    "slug": "cody-and-ko",
+    "name": "Cody & Ko",
+    "role": "second",
+    "handle": "@codyko2",
+    "url": "https://www.youtube.com/channel/UCy06jHRS_82N2i5v1YL7glQ",
+    "blurb": "Cody’s second channel for reaction videos and the uploads that don’t go on the main feed."
+  },
+  {
+    "id": "UC4sf8XtH_uXnwNP699luQVQ",
+    "slug": "tmg-studios",
+    "name": "TMG Studios",
+    "role": "collab",
+    "handle": "@TinyMeatGang",
+    "url": "https://www.youtube.com/channel/UC4sf8XtH_uXnwNP699luQVQ",
+    "blurb": "Tiny Meat Gang, the podcast Cody Ko makes with Noel Miller."
+  },
+  {
+    "id": "UCr2YGSi6k38GdeVzwXpbmmw",
+    "slug": "insanely-chill",
+    "name": "Insanely Chill",
+    "role": "podcast",
+    "handle": "@InsanelyChill",
+    "url": "https://www.youtube.com/channel/UCr2YGSi6k38GdeVzwXpbmmw",
+    "blurb": "Cody Ko’s Insanely Chill podcast, produced with Kenny Murphy and TMG Studios."
+  },
+  {
+    "id": "UCAuv0BvlTmR9KAOQKSyEaJw",
+    "slug": "circle-time",
+    "name": "Circle Time with Kelsey Kreppel",
+    "role": "podcast",
+    "handle": "@CircleTimePod",
+    "url": "https://www.youtube.com/channel/UCAuv0BvlTmR9KAOQKSyEaJw",
+    "blurb": "Kelsey Kreppel’s Circle Time podcast. Cody shows up as a guest; the show’s own feed stopped in July 2024."
+  },
+  {
+    "id": "UCZym84-cGUKAf1T2isIIXvw",
+    "slug": "kelsey-kreppel",
+    "name": "Kelsey Kreppel",
+    "role": "wife",
+    "handle": "@KelseyKreppel2",
+    "url": "https://www.youtube.com/channel/UCZym84-cGUKAf1T2isIIXvw",
+    "blurb": "Kelsey Kreppel’s channel: vlogs, bits, and the videos she makes with Cody."
+  },
+  {
+    "id": "UC1zrPxxLTkfQdbwdn6lJQ7w",
+    "slug": "cody-trains",
+    "name": "Cody Trains",
+    "role": "related",
+    "handle": "@itscodytrains",
+    "url": "https://www.youtube.com/channel/UC1zrPxxLTkfQdbwdn6lJQ7w",
+    "blurb": "Cody’s training vlog. Marathon and ultra footage from the same person, linked from his other channels."
+  }
+]
