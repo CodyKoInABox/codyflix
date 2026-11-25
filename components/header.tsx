@@ -13,19 +13,25 @@ export function Header() {
   const params = useSearchParams();
   const router = useRouter();
   const hydrated = useHydrated();
-  const { catalog, store, profile, signOut, requestManage } = useApp();
+  const { catalog, store, profile, signOut, requestManage, selectProfile } = useApp();
   const home = pathname === "/";
-  const urlQuery = hydrated && pathname.startsWith("/search") ? (params.get("q") ?? "") : "";
+  const onSearch = pathname.startsWith("/search");
+  const urlQuery = hydrated && onSearch ? (params.get("q") ?? "") : "";
   const [seenQuery, setSeenQuery] = useState(urlQuery);
   const [value, setValue] = useState(urlQuery);
   const [searchOpen, setSearchOpen] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
   const [focused, setFocused] = useState(false);
   const timer = useRef(0);
+  const returnTo = useRef("/");
+  const otherProfiles = store.hydrated ? store.profiles.filter((item) => item.id !== profile?.id) : [];
 
   if (urlQuery !== seenQuery) {
     setSeenQuery(urlQuery);
-    if (!focused) setValue(urlQuery);
+    if (!focused) {
+      setValue(urlQuery);
+      setSearchOpen(Boolean(urlQuery));
+    }
   }
 
   useEffect(() => {
@@ -40,9 +46,20 @@ export function Header() {
 
   function commit(next: string) {
     const trimmed = next.trim();
-    const href = trimmed ? `/search/?q=${encodeURIComponent(trimmed)}` : "/search/";
     const current = `${window.location.pathname}${window.location.search}`;
+    if (!trimmed) {
+      if (onSearch) router.replace(returnTo.current, { scroll: false });
+      return;
+    }
+    if (!onSearch) returnTo.current = current;
+    const href = `/search/?q=${encodeURIComponent(trimmed)}`;
     if (current !== href) router.replace(href, { scroll: false });
+  }
+
+  function collapseSearch() {
+    window.clearTimeout(timer.current);
+    setSearchOpen(false);
+    setValue("");
   }
 
   return (
@@ -111,6 +128,7 @@ export function Header() {
                 }}
                 onBlur={() => {
                   setFocused(false);
+                  if (!value.trim()) collapseSearch();
                 }}
                 onChange={(event) => {
                   const next = event.target.value;
@@ -121,9 +139,8 @@ export function Header() {
                 }}
                 onKeyDown={(event) => {
                   if (event.key === "Escape") {
-                    setSearchOpen(false);
-                    setValue("");
-                    if (pathname.startsWith("/search")) router.push("/");
+                    collapseSearch();
+                    if (onSearch) router.push(returnTo.current);
                   }
                 }}
               />
@@ -145,20 +162,31 @@ export function Header() {
           <PopMenu
             id="profile-menu"
             label={
-              store.hydrated && profile ? (
-                <Avatar name={profile.name} avatar={profile.avatar} />
-              ) : (
-                <span className="avatar avatar-skeleton" />
-              )
+              <>
+                {store.hydrated && profile ? (
+                  <Avatar name={profile.name} avatar={profile.avatar} />
+                ) : (
+                  <span className="avatar avatar-skeleton" />
+                )}
+                <span className="profile-caret" aria-hidden="true" />
+                <span className="visually-hidden">{profile ? `Profile menu, ${profile.name}` : "Profile menu"}</span>
+              </>
             }
             className="profile-trigger"
           >
             <p className="menu-label">{profile?.name ?? "Profile"}</p>
-            <button type="button" onClick={signOut}>
-              Switch profile
-            </button>
+            {otherProfiles.map((item) => (
+              <button key={item.id} type="button" className="menu-profile" onClick={() => selectProfile(item.id)}>
+                <Avatar name={item.name} avatar={item.avatar} className="avatar-sm" />
+                <span>{item.name}</span>
+              </button>
+            ))}
             <button type="button" onClick={requestManage}>
               Manage profiles
+            </button>
+            <hr className="menu-divider" />
+            <button type="button" onClick={signOut}>
+              Switch profile
             </button>
           </PopMenu>
         </div>

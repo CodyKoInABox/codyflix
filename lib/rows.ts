@@ -30,6 +30,26 @@ export function selectFeatured(channels: Channel[], videos: Video[]): Video | nu
   return [...pool].sort(byDateDesc)[0] ?? null;
 }
 
+export function acrossChannels(videos: Video[], limit: number): Video[] {
+  const queues = new Map<string, Video[]>();
+  for (const video of [...videos].sort(byDateDesc)) {
+    const queue = queues.get(video.channelId);
+    if (queue) queue.push(video);
+    else queues.set(video.channelId, [video]);
+  }
+  const picked: Video[] = [];
+  while (picked.length < limit && queues.size > 0) {
+    const round: Video[] = [];
+    for (const [channelId, queue] of queues) {
+      const next = queue.shift();
+      if (next) round.push(next);
+      if (queue.length === 0) queues.delete(channelId);
+    }
+    picked.push(...round.sort(byDateDesc));
+  }
+  return picked.slice(0, limit);
+}
+
 export function similarVideos(videos: Video[], video: Video, limit = 12): Video[] {
   const sameChannel = videos
     .filter((item) => item.channelId === video.channelId && item.id !== video.id)
@@ -53,24 +73,25 @@ export function buildHomeRows(channels: Channel[], videos: Video[], library: Pro
     rows.push({ id: "my-list", title: "My List", variant: "rail", videos: mine });
   }
 
-  const latest = [...videos].sort(byDateDesc).slice(0, 20);
+  const top = acrossChannels(videos, 10);
+  if (top.length > 0) {
+    rows.push({
+      id: "top10",
+      title: "Top 10 Across the Channels",
+      note: "Each channel’s newest upload in turn, by publish date. Not views.",
+      variant: "top10",
+      videos: top,
+    });
+  }
+
+  const topIds = new Set(top.map((video) => video.id));
+  const latest = [...videos].sort(byDateDesc).filter((video) => !topIds.has(video.id)).slice(0, 20);
   if (latest.length > 0) {
     rows.push({
       id: "latest",
       title: "Latest on Codyflix",
       variant: "rail",
       videos: latest,
-    });
-  }
-
-  const top = [...videos].sort(byDateDesc).slice(0, 10);
-  if (top.length > 0) {
-    rows.push({
-      id: "top10",
-      title: "Top 10 Latest",
-      note: "Ordered by publish date, not views.",
-      variant: "top10",
-      videos: top,
     });
   }
 
