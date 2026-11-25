@@ -99,20 +99,78 @@ export function normalizeStore(value: unknown): Store {
 
 const STORAGE_KEY = "codyflix.v1";
 
-export function loadStore(): Store {
-  if (typeof window === "undefined") return emptyStore();
-  try {
-    const raw = window.localStorage.getItem(STORAGE_KEY);
-    if (!raw) return emptyStore();
-    return normalizeStore(JSON.parse(raw));
-  } catch {
-    return emptyStore();
-  }
+export type LiveStore = Store & { hydrated: boolean };
+
+const SERVER_SNAPSHOT: LiveStore = {
+  profiles: [],
+  activeProfileId: null,
+  libraries: {},
+  hydrated: false,
+};
+
+let cache: { raw: string | null; store: LiveStore } | null = null;
+
+function persistable(store: Store): Store {
+  return {
+    profiles: store.profiles,
+    activeProfileId: store.activeProfileId,
+    libraries: store.libraries,
+  };
 }
 
-export function saveStore(store: Store): void {
-  if (typeof window === "undefined") return;
-  window.localStorage.setItem(STORAGE_KEY, JSON.stringify(store));
+export function readLiveStore(): LiveStore {
+  if (typeof window === "undefined") return SERVER_SNAPSHOT;
+  let raw: string | null = null;
+  try {
+    raw = window.localStorage.getItem(STORAGE_KEY);
+  } catch {
+    raw = null;
+  }
+  if (cache && cache.raw === raw) return cache.store;
+  let parsed = emptyStore();
+  if (raw) {
+    try {
+      parsed = normalizeStore(JSON.parse(raw));
+    } catch {
+      parsed = emptyStore();
+    }
+  }
+  const store: LiveStore = { ...parsed, hydrated: true };
+  cache = { raw, store };
+  return store;
+}
+
+export function getServerStore(): LiveStore {
+  return SERVER_SNAPSHOT;
+}
+
+export function subscribeStore(callback: () => void): () => void {
+  const onStorage = (event: StorageEvent) => {
+    if (event.key && event.key !== STORAGE_KEY) return;
+    cache = null;
+    callback();
+  };
+  window.addEventListener("storage", onStorage);
+  window.addEventListener("codyflix-store", callback);
+  return () => {
+    window.removeEventListener("storage", onStorage);
+    window.removeEventListener("codyflix-store", callback);
+  };
+}
+
+export function writeLiveStore(store: Store): void {
+  const clean = persistable(store);
+  const raw = JSON.stringify(clean);
+  window.localStorage.setItem(STORAGE_KEY, raw);
+  cache = { raw, store: { ...clean, hydrated: true } };
+  if (document.documentElement) {
+    document.documentElement.dataset.gate = clean.activeProfileId ? "app" : "open";
+  }
+  window.dispatchEvent(new Event("codyflix-store"));
+}
+
+export function updateLiveStore(recipe: (store: Store) => Store): void {
+  writeLiveStore(recipe(readLiveStore()));
 }
 
 export { STORAGE_KEY };
