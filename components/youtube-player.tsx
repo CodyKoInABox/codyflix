@@ -339,9 +339,14 @@ export const YoutubePlayer = forwardRef<YoutubePlayerHandle, YoutubePlayerProps>
     };
   }, [autoPlay, concealError, controls, focusable, loop, muted, title, track, videoId]);
 
+  // onProgress writes the store, which hands back a new callback; keep it out of the deps or this loops.
+  const markStarted = useEffectEvent(() => {
+    if (track && onProgress) onProgress({ videoId, started: true });
+  });
+
   useEffect(() => {
-    if ((fallback || concealed) && track && onProgress) onProgress({ videoId, started: true });
-  }, [concealed, fallback, onProgress, track, videoId]);
+    if (fallback || concealed) markStarted();
+  }, [concealed, fallback]);
 
   if (concealed) return null;
 
