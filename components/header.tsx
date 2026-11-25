@@ -24,6 +24,7 @@ export function Header() {
   const [focused, setFocused] = useState(false);
   const timer = useRef(0);
   const returnTo = useRef("/");
+  const pendingProfile = useRef<string | null>(null);
   const otherProfiles = store.hydrated ? store.profiles.filter((item) => item.id !== profile?.id) : [];
 
   if (urlQuery !== seenQuery) {
@@ -43,6 +44,23 @@ export function Header() {
     window.addEventListener("scroll", onScroll, { passive: true });
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
+
+  useEffect(() => {
+    const id = pendingProfile.current;
+    if (!id || pathname !== "/") return;
+    pendingProfile.current = null;
+    selectProfile(id);
+  }, [pathname, selectProfile]);
+
+  // Same rule as the gate: a watch page must be gone before another profile becomes active.
+  function switchProfile(id: string) {
+    if (pathname === "/") {
+      selectProfile(id);
+      return;
+    }
+    pendingProfile.current = id;
+    router.push("/");
+  }
 
   function commit(next: string) {
     const trimmed = next.trim();
@@ -176,7 +194,7 @@ export function Header() {
           >
             <p className="menu-label">{profile?.name ?? "Profile"}</p>
             {otherProfiles.map((item) => (
-              <button key={item.id} type="button" className="menu-profile" onClick={() => selectProfile(item.id)}>
+              <button key={item.id} type="button" className="menu-profile" onClick={() => switchProfile(item.id)}>
                 <Avatar name={item.name} avatar={item.avatar} className="avatar-sm" />
                 <span>{item.name}</span>
               </button>
