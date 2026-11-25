@@ -23,5 +23,5 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
 export default async function WatchPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   if (!videoById(getCatalog(), id)) notFound();
-  return <WatchScreen videoId={id} />;
+  return <WatchScreen key={id} videoId={id} />;
 }
