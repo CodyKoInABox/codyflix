@@ -9,7 +9,7 @@ import { HoverCard } from "@/components/hover-card";
 import { ProfileGate } from "@/components/profile-gate";
 import { TitleDialog } from "@/components/title-dialog";
 import { getCatalog } from "@/lib/catalog";
-import { STORAGE_KEY } from "@/lib/store";
+import { GATE_BOOT_SCRIPT } from "@/lib/store";
 import "./globals.css";
 
 const display = Bebas_Neue({
@@ -24,8 +24,6 @@ const sans = Inter({
   variable: "--font-sans",
   display: "swap",
 });
-
-const gateBoot = `(function(){try{var raw=localStorage.getItem(${JSON.stringify(STORAGE_KEY)});var data=raw?JSON.parse(raw):null;var id=data&&data.activeProfileId;var profiles=data&&data.profiles;var ok=!!(id&&Array.isArray(profiles)&&profiles.some(function(p){return p&&p.id===id&&p.name;}));document.documentElement.dataset.gate=ok?"app":"open";}catch(e){document.documentElement.dataset.gate="open";}})();`;
 
 export const metadata: Metadata = {
   title: {
@@ -48,7 +46,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html lang="en" suppressHydrationWarning className={`${display.variable} ${sans.variable}`}>
       <body>
         <Script id="codyflix-gate" strategy="beforeInteractive">
-          {gateBoot}
+          {GATE_BOOT_SCRIPT}
         </Script>
         <a className="skip-link" href="#main">
           Skip to content
