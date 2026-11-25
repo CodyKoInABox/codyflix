@@ -1,4 +1,4 @@
-import { isAvatarId, MAX_PROFILES, sanitizeName } from "@/lib/profiles";
+import { DEFAULT_PROFILE, isAvatarId, MAX_PROFILES, sanitizeName } from "@/lib/profiles";
 import type { Profile, ProfileLibrary, ProgressEntry, Reaction, Store } from "@/lib/types";
 
 export function emptyLibrary(): ProfileLibrary {
@@ -97,6 +97,15 @@ export function normalizeStore(value: unknown): Store {
   return { profiles, activeProfileId, libraries };
 }
 
+export function ensureDefaultProfile(store: Store): Store {
+  if (store.profiles.length > 0) return store;
+  return {
+    profiles: [{ ...DEFAULT_PROFILE }],
+    activeProfileId: DEFAULT_PROFILE.id,
+    libraries: { [DEFAULT_PROFILE.id]: emptyLibrary() },
+  };
+}
+
 const STORAGE_KEY = "codyflix.v1";
 
 export type LiveStore = Store & { hydrated: boolean };
@@ -135,7 +144,17 @@ export function readLiveStore(): LiveStore {
       parsed = emptyStore();
     }
   }
-  const store: LiveStore = { ...parsed, hydrated: true };
+  const seeded = ensureDefaultProfile(parsed);
+  if (seeded !== parsed) {
+    const seededRaw = JSON.stringify(seeded);
+    try {
+      window.localStorage.setItem(STORAGE_KEY, seededRaw);
+      raw = seededRaw;
+    } catch {
+      // Blocked or full storage still gets Default in memory for this visit.
+    }
+  }
+  const store: LiveStore = { ...seeded, hydrated: true };
   cache = { raw, store };
   return store;
 }
@@ -172,5 +191,8 @@ export function writeLiveStore(store: Store): void {
 export function updateLiveStore(recipe: (store: Store) => Store): void {
   writeLiveStore(recipe(readLiveStore()));
 }
+
+// Runs before hydration so a first visit never paints the gate. The profile filter must match normalizeProfile.
+export const GATE_BOOT_SCRIPT = `(function(){var key=${JSON.stringify(STORAGE_KEY)};var gate="app";try{var raw=localStorage.getItem(key);var data=null;try{data=raw?JSON.parse(raw):null;}catch(e){}var profiles=data&&Array.isArray(data.profiles)?data.profiles.filter(function(p){return p&&typeof p.id==="string"&&p.id&&typeof p.name==="string"&&p.name.trim();}):[];if(profiles.length){gate=profiles.some(function(p){return p.id===data.activeProfileId;})?"app":"open";}else{localStorage.setItem(key,${JSON.stringify(JSON.stringify(ensureDefaultProfile(emptyStore())))});}}catch(e){}document.documentElement.dataset.gate=gate;})();`;
 
 export { STORAGE_KEY };

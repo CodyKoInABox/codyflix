@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { usePathname, useRouter } from "next/navigation";
+import { useEffect, useRef, useState } from "react";
 import { useApp } from "@/components/app-state";
 import { Avatar } from "@/components/avatar";
 import { PencilIcon } from "@/components/icons";
@@ -10,6 +11,9 @@ import type { Profile } from "@/lib/types";
 
 export function ProfileGate() {
   const { store, gateEditing, requestManage, finishManage, selectProfile, createProfile, renameProfile, changeAvatar, deleteProfile } = useApp();
+  const router = useRouter();
+  const pathname = usePathname();
+  const pendingPick = useRef<string | null>(null);
   const [adding, setAdding] = useState(false);
   const [editing, setEditing] = useState<Profile | null>(null);
   const [draftName, setDraftName] = useState("");
@@ -21,6 +25,23 @@ export function ProfileGate() {
     setEditing(null);
     setConfirmDelete(false);
   });
+
+  useEffect(() => {
+    const id = pendingPick.current;
+    if (!id || pathname !== "/") return;
+    pendingPick.current = null;
+    selectProfile(id);
+  }, [pathname, selectProfile]);
+
+  // Activate the pick only once the previous page is gone, so a watch page cannot record into it.
+  function pick(id: string) {
+    if (pathname === "/") {
+      selectProfile(id);
+      return;
+    }
+    pendingPick.current = id;
+    router.push("/");
+  }
 
   function openAdd() {
     setError("");
@@ -54,7 +75,7 @@ export function ProfileGate() {
               key={profile.id}
               type="button"
               className="profile-tile"
-              onClick={() => (gateEditing ? openEdit(profile) : selectProfile(profile.id))}
+              onClick={() => (gateEditing ? openEdit(profile) : pick(profile.id))}
             >
               <span className="avatar-wrap">
                 <Avatar name={profile.name} avatar={profile.avatar} />
@@ -188,9 +209,11 @@ export function ProfileGate() {
                 </>
               ) : (
                 <>
-                  <button type="button" className="btn btn-danger" onClick={() => setConfirmDelete(true)}>
-                    Delete
-                  </button>
+                  {store.profiles.length > 1 ? (
+                    <button type="button" className="btn btn-danger" onClick={() => setConfirmDelete(true)}>
+                      Delete
+                    </button>
+                  ) : null}
                   <button type="submit" className="btn">
                     Save
                   </button>

@@ -16,6 +16,8 @@ export const AVATARS = [
 
 export type AvatarId = (typeof AVATARS)[number]["id"];
 
+export const DEFAULT_PROFILE: Readonly<Profile> = { id: "default", name: "Default", avatar: "ember" };
+
 const avatarIds = new Set<string>(AVATARS.map((avatar) => avatar.id));
 
 export function sanitizeName(name: string): string {
@@ -45,5 +47,6 @@ export function renameProfile(profiles: Profile[], id: string, name: string): Pr
 }
 
 export function deleteProfile(profiles: Profile[], id: string): Profile[] {
+  if (profiles.length <= 1 || !profiles.some((profile) => profile.id === id)) return profiles;
   return profiles.filter((profile) => profile.id !== id);
 }
