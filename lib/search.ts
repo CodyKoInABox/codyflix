@@ -30,3 +30,30 @@ export function searchVideos(videos: Video[], channels: Channel[], query: string
 
   return hits.map((hit) => hit.video);
 }
+
+export function searchHref(query: string): string {
+  const trimmed = query.trim();
+  return trimmed ? `/search/?q=${encodeURIComponent(trimmed)}` : "/search/";
+}
+
+export function channelsInResults(results: Video[], channels: Channel[], limit = 6): Channel[] {
+  const counts = new Map<string, number>();
+  for (const video of results) counts.set(video.channelId, (counts.get(video.channelId) ?? 0) + 1);
+  return channels
+    .map((channel, index) => ({ channel, index, count: counts.get(channel.id) ?? 0 }))
+    .filter((item) => item.count > 0)
+    .sort((a, b) => b.count - a.count || a.index - b.index)
+    .slice(0, limit)
+    .map((item) => item.channel);
+}
+
+export function searchReturnPath(href: string, origin: string): string | null {
+  let url: URL;
+  try {
+    url = new URL(href, origin);
+  } catch {
+    return null;
+  }
+  if (url.origin !== origin || url.pathname.startsWith("/search")) return null;
+  return `${url.pathname}${url.search}${url.hash}`;
+}

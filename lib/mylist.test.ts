@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { resolveMyList, toggleMyList } from "@/lib/mylist";
+import { resolveMyList, suggestForMyList, toggleMyList } from "@/lib/mylist";
 import type { Video } from "@/lib/types";
 
 const videos: Video[] = [
@@ -33,5 +33,11 @@ describe("my list", () => {
   it("drops unknown ids and duplicates while preserving order", () => {
     const resolved = resolveMyList(["missing", "bbbbbbbbbbb", "bbbbbbbbbbb", "aaaaaaaaaaa"], videos);
     expect(resolved.map((video) => video.id)).toEqual(["bbbbbbbbbbb", "aaaaaaaaaaa"]);
+  });
+
+  it("suggests the newest titles that are not already saved", () => {
+    expect(suggestForMyList([], videos).map((video) => video.id)).toEqual(["bbbbbbbbbbb", "aaaaaaaaaaa"]);
+    expect(suggestForMyList(["bbbbbbbbbbb"], videos).map((video) => video.id)).toEqual(["aaaaaaaaaaa"]);
+    expect(suggestForMyList([], videos, 1).map((video) => video.id)).toEqual(["bbbbbbbbbbb"]);
   });
 });
