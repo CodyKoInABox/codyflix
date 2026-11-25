@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { searchVideos } from "@/lib/search";
+import { channelsInResults, searchHref, searchReturnPath, searchVideos } from "@/lib/search";
 import type { Channel, Video } from "@/lib/types";
 
 const channels: Channel[] = [
@@ -67,5 +67,36 @@ describe("searchVideos", () => {
   it("requires every word to match", () => {
     expect(searchVideos(videos, channels, "tinder date")).toEqual([]);
     expect(searchVideos(videos, channels, "elaborate night").map((item) => item.id)).toEqual(["ccccccccccc"]);
+  });
+});
+
+describe("searchHref", () => {
+  it("trims and encodes the query, and drops it when blank", () => {
+    expect(searchHref("  tinder & dates ")).toBe("/search/?q=tinder%20%26%20dates");
+    expect(searchHref("   ")).toBe("/search/");
+  });
+});
+
+describe("channelsInResults", () => {
+  it("orders channels by hits, then catalog order, and skips channels with none", () => {
+    const hits = [videos[2], videos[0], videos[1]];
+    expect(channelsInResults(hits, channels).map((channel) => channel.id)).toEqual(["main", "wife"]);
+    expect(channelsInResults([videos[2]], channels).map((channel) => channel.id)).toEqual(["wife"]);
+    expect(channelsInResults(hits, channels, 1).map((channel) => channel.id)).toEqual(["main"]);
+  });
+});
+
+describe("searchReturnPath", () => {
+  const origin = "https://codyflix.example";
+
+  it("keeps the path, query, and hash of a same-site page", () => {
+    expect(searchReturnPath(`${origin}/channel/cody-ko/?tab=1#top`, origin)).toBe("/channel/cody-ko/?tab=1#top");
+    expect(searchReturnPath(`${origin}/`, origin)).toBe("/");
+  });
+
+  it("ignores the search page itself, other sites, and junk", () => {
+    expect(searchReturnPath(`${origin}/search/?q=tinder`, origin)).toBeNull();
+    expect(searchReturnPath("https://evil.example/my-list/", origin)).toBeNull();
+    expect(searchReturnPath("http://[", origin)).toBeNull();
   });
 });
