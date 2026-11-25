@@ -1,0 +1,98 @@
+"$schema" = "https://open-api.netlify.com/netlify.schema.json"
+
+# Deploy previews for this repo are the existing Netlify site `codyflix`.
+# That site was connected for the previous Next.js server app. This app is
+# `output: 'export'` and publishes `out/`. Netlify's Next.js runtime runs
+# before the build and sets NEXT_PRIVATE_STANDALONE, then expects a server
+# publish directory. Skip it so the static export is what gets deployed.
+# Node 22 matches Next.js 16 (engines.node >= 20.9). `.node-version` is the
+# same pin in case the site UI still selects an older Node for installs.
+# Firebase Hosting in firebase.json stays the production deploy path.
+
+[build]
+  command = "npm run build"
+  publish = "out"
+
+[build.environment]
+  NODE_VERSION = "22"
+  NETLIFY_NEXT_PLUGIN_SKIP = "true"
+
+# Directory indexes are `/search/index.html`, `/channel/<slug>/index.html`,
+# `/watch/<id>/index.html`, and the other trailing-slash routes. Pretty URLs
+# serve those files and forward the slash-less path to the slash path.
+# There is no catch-all rewrite: a missing HTML file must stay a 404.
+[build.processing.html]
+  pretty_urls = true
+
+# Same security headers as firebase.json `hosting.headers` for `**`.
+[[headers]]
+  for = "/*"
+
+  [headers.values]
+    X-Content-Type-Options = "nosniff"
+    Referrer-Policy = "strict-origin-when-cross-origin"
+    X-Frame-Options = "SAMEORIGIN"
+
+# Same immutable Cache-Control as firebase.json for hashed and static assets
+# (`**/*.@(js|css|svg|woff2|webp|png|jpg|jpeg|ico)`). `/_next/static/*` is the
+# export's hashed JS, CSS, fonts, and SVG. The extension rules cover the same
+# kinds of files, including `/icon.svg`. Header values merge with `/*`.
+[[headers]]
+  for = "/_next/static/*"
+
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
+
+[[headers]]
+  for = "/*.js"
+
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
+
+[[headers]]
+  for = "/*.css"
+
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
+
+[[headers]]
+  for = "/*.svg"
+
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
+
+[[headers]]
+  for = "/*.woff2"
+
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
+
+[[headers]]
+  for = "/*.webp"
+
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
+
+[[headers]]
+  for = "/*.png"
+
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
+
+[[headers]]
+  for = "/*.jpg"
+
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
+
+[[headers]]
+  for = "/*.jpeg"
+
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
+
+[[headers]]
+  for = "/*.ico"
+
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"

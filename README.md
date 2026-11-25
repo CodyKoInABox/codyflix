@@ -83,6 +83,12 @@ npx -y firebase-tools@latest emulators:start --only hosting
 
 The emulator serves `out/` at `http://localhost:5000` by default.
 
+## Netlify
+
+The existing Netlify site builds GitHub deploy previews from this repo. `netlify.toml` is only that build contract. Production hosting stays on Firebase, above.
+
+The file sets the build command to `npm run build`, the publish directory to `out`, and Node `22` (also in `.node-version`). `NETLIFY_NEXT_PLUGIN_SKIP=true` keeps Netlify’s Next.js runtime from turning the export into a server deploy. Pretty URLs serve the trailing-slash pages (`/`, `/search/`, `/my-list/`, `/latest/`, `/channel/<slug>/`, `/watch/<id>/`). There is no catch-all rewrite. The response headers match the security and immutable-asset headers in `firebase.json`.
+
 ## Scripts
 
 - `npm run dev` — Next.js dev server
