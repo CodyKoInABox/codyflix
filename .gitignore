@@ -1,0 +1,13 @@
+node_modules/
+.next/
+out/
+.firebase/
+.firebaserc
+next-env.d.ts
+coverage/
+*.log
+.env
+.env.*
+!.env.example
+.DS_Store
+tsconfig.tsbuildinfo
