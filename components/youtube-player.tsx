@@ -339,9 +339,14 @@ export const YoutubePlayer = forwardRef<YoutubePlayerHandle, YoutubePlayerProps>
     };
   }, [autoPlay, concealError, controls, focusable, loop, muted, title, track, videoId]);
 
+  const markStarted = useEffectEvent(() => {
+    if (track && onProgress) onProgress({ videoId, started: true });
+  });
+
+  // onProgress writes the store, and the store hands back a new onProgress, so it cannot be a dependency.
   useEffect(() => {
-    if ((fallback || concealed) && track && onProgress) onProgress({ videoId, started: true });
-  }, [concealed, fallback, onProgress, track, videoId]);
+    if (fallback || concealed) markStarted();
+  }, [concealed, fallback, videoId]);
 
   if (concealed) return null;
 
